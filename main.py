@@ -60,19 +60,15 @@ class Bot:
             x_extrap = np.add(np.arange(self.domain + self.testDomain), (np.ones((self.domain + self.testDomain,))* (self.i-self.domain)))
             y_extrap = a * np.power(x_extrap,5) + b*np.power(x_extrap,4) + c* np.power(x_extrap,3) + d*np.power(x_extrap,2)+ e* np.power(x_extrap,1) + f
             peaks = find_peaks(y_extrap)
-            self.testExtrapl.append({"a": a, "b": b, "c": c, "d": d, "e": e, "f": f, "accuracy": 0 ,"averageAccuracy": 0})
-            if len(self.testExtrapl) > self.testDomain:
-                averageAccuracy = (self.testExtrapl[len(self.testExtrapl)-1]["accuracy"])/self.testDomain
-                self.accuracyTotal += averageAccuracy
-                del self.testExtrapl[len(self.testExtrapl)-1]
-            for i in self.testExtrapl:
-                if self.i> 0:
-                    testXExtrap = np.array([self.i,self.i-1])
-                    testYExtrap =  i["a"]* np.power(testXExtrap,5) + i["b"]*np.power(testXExtrap,4) + i["c"]* np.power(testXExtrap,3) + i["d"]*np.power(testXExtrap,2)+ i["e"]* np.power(testXExtrap,1) + i["f"]
-                    slope = testYExtrap[1]-testYExtrap[0]
-                    print(closeValues[self.i], testYExtrap[1])
-                    if (slope < 0 and closeValues[self.i] < testYExtrap[1]) or (slope > 0 and closeValues[self.i] > testYExtrap[1]):
-                        i["accuracy"] += 1
+            accuracy = 0
+            for i in range(1, self.testDomain):
+                print(len(y_extrap)-(self.testDomain-i))
+                slope = y_extrap[len(y_extrap)-(self.testDomain-i)] - y_extrap[len(y_extrap)-(self.testDomain-i)-1]
+                print(slope)
+                if (slope < 0 and closeValues[self.i - (self.testDomain-i)] < y_extrap[len(y_extrap)-(self.testDomain-i)]) or (slope > 0 and closeValues[self.i - (self.testDomain-i)] > y_extrap[len(y_extrap)-(self.testDomain-i)]):
+                    accuracy += 1
+            #print(accuracy/self.testDomain)
+            self.accuracyTotal += accuracy/self.testDomain         
             #plt.plot(x_extrap, y_extrap, label='Interpolated function')
             #plt.plot(x, y, 'o', label='Data points')
             #plt.legend()
