@@ -37,7 +37,11 @@ class Bot:
     testExtrapl = []
     accuracyTotal = 0
     accuracyAverage = 0
-    tableDomain = Domain([ContinuousVariable("a"),ContinuousVariable("b"),ContinuousVariable("c"),ContinuousVariable("d")], metas=[ContinuousVariable("accuracy")])
+    features = ['a','b','c','e','f']
+    base = 20;
+    tableDomain = Domain([ContinuosVariable(f) for f in features],
+    DiscreteVariable('target', values=[str(i*base) for i in range(1,5)]))
+    data = Orange.data.Table(tableDomain)
     def __init__(self):
         self.ib = IBApi()
         self.ib.connect("127.0.0.1", 7497, 1)
@@ -70,7 +74,9 @@ class Bot:
                 if (slope < 0 and closeValues[self.i - (self.testDomain-i)] < y_extrap[i]) or (slope > 0 and closeValues[self.i - (self.testDomain-i)] > y_extrap[i]):
                     accuracy += 1
             #print(accuracy/self.testDomain)
-            self.accuracyTotal += accuracy/self.testDomain         
+            accuracy = accuracy/self.testDomain
+            inputAccuracy = self.base * round(accuracy/self.base)
+            self.data.append([a,b,c,d,e,inputAccuracy])         
             #plt.plot(x_extrap, y_extrap, label='Interpolated function')
             #plt.plot(x, y, 'o', label='Data points')
             #plt.legend()
@@ -78,8 +84,18 @@ class Bot:
         self.i += 1
     def onBarFinish(self,start,end):
         self.accuracyAverage = self.accuracyTotal/self.i
+        model = Orange.classification.NeuralNetworkLearner(
+        hidden_layers=[5],  # one hidden layer with 5 neurons
+        activation_function=Orange.classification.neural.Activation.Sigmoid,
+        weight_decay=0.1,  # regularization parameter
+        max_iter=1000,  # maximum number of iterations
+        )
+        train_data, test_data = Orange.evaluation.testing.sample(data, n=0.8)
+        classifier = model(train_data)
+        result = Orange.evaluation.testing.TestOnTestData(train_data, test_data, [classifier])
+
         print(f"End of HistoricalData")
         print(f"Start: {start}, End: {end}")
-        print(f"The accuracy for this strategy is {self.accuracyAverage}")
+        print(f"The training results: {result}")
 bot = Bot()
 count = 0
