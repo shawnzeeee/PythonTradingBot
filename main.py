@@ -13,6 +13,8 @@ from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 
+from Orange.data import Domain, ContinuousVariable,DiscreteVariable, StringVariable
+
 class IBApi(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self)
@@ -35,6 +37,7 @@ class Bot:
     testExtrapl = []
     accuracyTotal = 0
     accuracyAverage = 0
+    tableDomain = Domain([ContinuousVariable("a"),ContinuousVariable("b"),ContinuousVariable("c"),ContinuousVariable("d")], metas=[ContinuousVariable("accuracy")])
     def __init__(self):
         self.ib = IBApi()
         self.ib.connect("127.0.0.1", 7497, 1)
@@ -56,16 +59,15 @@ class Bot:
             x = np.arange(len(self.bars))
             closeValues = [bar.close for bar in self.bars]
             y = np.array(closeValues)
-            a,b,c,d,e,f = np.polyfit([x[i] for i in range(self.i-self.domain, self.i,1)],[y[i] for i in range(self.i-self.domain,self.i,1)],5)
-            x_extrap = np.add(np.arange(self.domain + self.testDomain), (np.ones((self.domain + self.testDomain,))* (self.i-self.domain)))
+            a,b,c,d,e,f = np.polyfit([x[i] for i in range(self.i-self.domain-self.testDomain, self.i-self.testDomain,1)],[y[i] for i in range(self.i-self.domain-self.testDomain,self.i-self.testDomain,1)],5)
+            #x_extrap = np.add(np.arange(self.domain + self.testDomain), (np.ones((self.domain + self.testDomain,))* (self.i-self.domain)))
+            x_extrap = np.add(np.arange(self.testDomain),(np.ones(self.testDomain) * (self.i - self.testDomain)))
             y_extrap = a * np.power(x_extrap,5) + b*np.power(x_extrap,4) + c* np.power(x_extrap,3) + d*np.power(x_extrap,2)+ e* np.power(x_extrap,1) + f
             peaks = find_peaks(y_extrap)
             accuracy = 0
             for i in range(1, self.testDomain):
-                print(len(y_extrap)-(self.testDomain-i))
-                slope = y_extrap[len(y_extrap)-(self.testDomain-i)] - y_extrap[len(y_extrap)-(self.testDomain-i)-1]
-                print(slope)
-                if (slope < 0 and closeValues[self.i - (self.testDomain-i)] < y_extrap[len(y_extrap)-(self.testDomain-i)]) or (slope > 0 and closeValues[self.i - (self.testDomain-i)] > y_extrap[len(y_extrap)-(self.testDomain-i)]):
+                slope = y_extrap[i] - y_extrap[i-1]
+                if (slope < 0 and closeValues[self.i - (self.testDomain-i)] < y_extrap[i]) or (slope > 0 and closeValues[self.i - (self.testDomain-i)] > y_extrap[i]):
                     accuracy += 1
             #print(accuracy/self.testDomain)
             self.accuracyTotal += accuracy/self.testDomain         
